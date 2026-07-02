@@ -8,10 +8,6 @@ export default function DatabaseTestPage() {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    testConnection();
-  }, []);
-
   const testConnection = async () => {
     setStatus('loading');
     try {
@@ -30,6 +26,11 @@ export default function DatabaseTestPage() {
       setError(err.message || 'Failed to connect to database');
     }
   };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    testConnection();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">

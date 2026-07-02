@@ -122,7 +122,7 @@ export default function AdminLoginPage() {
             </div>
 
             {/* Remember me */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center pb-5 gap-2">
               <Checkbox
                 id="remember-me"
                 checked={rememberMe}
