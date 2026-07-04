@@ -1,10 +1,5 @@
-import { Inter } from "next/font/google";
+// Font styling is handled globally via app/globals.css to ensure offline build support.
 import "./globals.css";
-
-const inter = Inter({
-  variable: "--font-sans",
-  subsets: ["latin"],
-});
 
 import { Providers } from "@/components/Providers";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -18,7 +13,7 @@ export default function RootLayout({ children }) {
   return (
     <html
       lang="en"
-      className={`${inter.variable} h-full antialiased`}
+      className="h-full antialiased"
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col font-sans">

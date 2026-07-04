@@ -5,7 +5,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 
 export function Providers({ children }) {
   return (
-    <SessionProvider>
+    // refetchInterval=0 disables automatic session polling which causes navigation delays
+    <SessionProvider refetchInterval={0} refetchOnWindowFocus={false}>
       <TooltipProvider>{children}</TooltipProvider>
     </SessionProvider>
   );

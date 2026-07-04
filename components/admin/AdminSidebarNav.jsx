@@ -5,10 +5,10 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Package,
-  FolderOpen,
   Layers,
   ShoppingCart,
   Settings,
+  LayoutGrid,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -27,8 +27,7 @@ export const navGroups = [
   {
     label: "Catalog",
     items: [
-      { href: "/admin/products", label: "Products", icon: Package },
-      { href: "/admin/categories", label: "Categories", icon: FolderOpen },
+      { href: "/admin/catalog", label: "Catalog Builder", icon: LayoutGrid },
       { href: "/admin/stock", label: "Stock", icon: Layers },
     ],
   },
