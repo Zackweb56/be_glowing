@@ -1,10 +1,10 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
-  Package,
   Layers,
   ShoppingCart,
   Settings,
@@ -28,7 +28,7 @@ export const navGroups = [
     label: "Catalog",
     items: [
       { href: "/admin/catalog", label: "Catalog Builder", icon: LayoutGrid },
-      { href: "/admin/stock", label: "Stock", icon: Layers },
+      { href: "/admin/stock", label: "Stock", icon: Layers, badge: true },
     ],
   },
   {
@@ -45,7 +45,7 @@ export const navGroups = [
   },
 ];
 
-export function AdminSidebarNav({ collapsed = false }) {
+export function AdminSidebarNav({ collapsed = false, stockBadgeCount = 0 }) {
   const pathname = usePathname();
 
   const isActive = (href, exact) =>
@@ -61,13 +61,15 @@ export function AdminSidebarNav({ collapsed = false }) {
             </p>
           )}
           <ul className="flex flex-col gap-0.5">
-            {group.items.map(({ href, label, icon: Icon, exact }) => {
+            {group.items.map(({ href, label, icon: Icon, exact, badge }) => {
               const active = isActive(href, exact);
+              const showBadge = badge && stockBadgeCount > 0;
+
               const linkEl = (
                 <Link
                   href={href}
                   className={cn(
-                    "flex items-center gap-3 rounded-lg px-2 py-2 text-sm font-medium transition-colors",
+                    "relative flex items-center gap-3 rounded-lg px-2 py-2 text-sm font-medium transition-colors",
                     "hover:bg-accent hover:text-accent-foreground",
                     active
                       ? "bg-accent text-accent-foreground"
@@ -80,7 +82,20 @@ export function AdminSidebarNav({ collapsed = false }) {
                       active ? "text-foreground" : "text-muted-foreground"
                     )}
                   />
-                  {!collapsed && <span>{label}</span>}
+                  {!collapsed && (
+                    <div className="flex flex-1 items-center justify-between">
+                      <span>{label}</span>
+                      {showBadge && (
+                        <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-white">
+                          {stockBadgeCount > 9 ? "9+" : stockBadgeCount}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  {/* Collapsed dot badge */}
+                  {collapsed && showBadge && (
+                    <span className="absolute right-1 top-1.5 flex h-2 w-2 rounded-full bg-destructive" />
+                  )}
                 </Link>
               );
 
@@ -89,7 +104,10 @@ export function AdminSidebarNav({ collapsed = false }) {
                   {collapsed ? (
                     <Tooltip>
                       <TooltipTrigger asChild>{linkEl}</TooltipTrigger>
-                      <TooltipContent side="right">{label}</TooltipContent>
+                      <TooltipContent side="right">
+                        {label}
+                        {showBadge && ` (${stockBadgeCount} needs attention)`}
+                      </TooltipContent>
                     </Tooltip>
                   ) : (
                     linkEl

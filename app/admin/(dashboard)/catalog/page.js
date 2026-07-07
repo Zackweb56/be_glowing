@@ -23,6 +23,7 @@ import {
   AlertTriangle, Package, FolderOpen, Star, Loader2,
   AlertCircle, CheckCircle2,
 } from "lucide-react";
+import { Toast } from "@/components/admin/Toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,31 +41,6 @@ function cn(...classes) {
   return classes.filter(Boolean).join(" ");
 }
 
-// ─── Toast ───────────────────────────────────────────────────────────────────
-function Toast({ message, type, onClose }) {
-  useEffect(() => {
-    const t = setTimeout(onClose, 3500);
-    return () => clearTimeout(t);
-  }, [onClose]);
-
-  return (
-    <div className={cn(
-      "fixed bottom-6 right-6 z-[300] flex items-center gap-3 px-4 py-3 rounded-xl border backdrop-blur-md shadow-2xl",
-      "animate-in slide-in-from-bottom-4 fade-in duration-300",
-      type === "success" && "bg-emerald-500/10 border-emerald-500/20 text-emerald-400",
-      type === "error" && "bg-destructive/10 border-destructive/20 text-destructive",
-      type === "warning" && "bg-amber-500/10 border-amber-500/20 text-amber-400",
-    )}>
-      {type === "success" && <CheckCircle2 className="h-4 w-4 shrink-0" />}
-      {type === "error" && <AlertCircle className="h-4 w-4 shrink-0" />}
-      {type === "warning" && <AlertTriangle className="h-4 w-4 shrink-0" />}
-      <span className="text-sm font-semibold">{message}</span>
-      <button onClick={onClose} className="ml-2 opacity-60 hover:opacity-100 transition-opacity">
-        <X className="h-3.5 w-3.5" />
-      </button>
-    </div>
-  );
-}
 
 // ─── Inline Delete Confirm ────────────────────────────────────────────────────
 function DeleteConfirm({ onConfirm, onCancel, message = "Delete?", loading = false }) {
@@ -212,7 +188,6 @@ function ProductModal({ initial, categoryId, categories, onSave, onClose, saving
     description: initial?.description ?? "",
     price: initial?.price?.toString() ?? "",
     compareAtPrice: initial?.compareAtPrice?.toString() ?? "",
-    sku: initial?.sku ?? "",
     status: initial?.status ?? "active",
     featured: initial?.featured ?? false,
     images: initial?.images ?? [],
@@ -261,6 +236,7 @@ function ProductModal({ initial, categoryId, categories, onSave, onClose, saving
     setError(""); setSuccess("");
     if (!form.name.trim()) { setError("Product name is required"); setTab("main"); return; }
     if (form.price === "" || isNaN(form.price) || Number(form.price) < 0) { setError("A valid price is required"); setTab("main"); return; }
+    if (form.compareAtPrice && Number(form.compareAtPrice) < Number(form.price)) { setError("Compare price cannot be less than regular price"); setTab("main"); return; }
     if (!form.category) { setError("Please select a category"); setTab("main"); return; }
     onSave({ ...form, price: Number(form.price), compareAtPrice: form.compareAtPrice ? Number(form.compareAtPrice) : null });
   };
@@ -307,13 +283,6 @@ function ProductModal({ initial, categoryId, categories, onSave, onClose, saving
               {/* Category selector is hidden per requirements */}
               <input type="hidden" value={form.category} />
 
-              {/* SKU */}
-              <div className="space-y-1.5">
-                <Label htmlFor="p-sku">SKU</Label>
-                <Input id="p-sku" value={form.sku} onChange={(e) => set("sku", e.target.value)}
-                  placeholder="RING-GLD-001" className="bg-background border-border" disabled={saving} />
-              </div>
-
               {/* Description */}
               <div className="col-span-2 space-y-1.5">
                 <Label htmlFor="p-desc">Description</Label>
@@ -345,7 +314,6 @@ function ProductModal({ initial, categoryId, categories, onSave, onClose, saving
                   disabled={saving}>
                   <option value="draft">Draft</option>
                   <option value="active">Active</option>
-                  <option value="archived">Archived</option>
                 </select>
               </div>
 
@@ -423,109 +391,201 @@ function ProductModal({ initial, categoryId, categories, onSave, onClose, saving
   );
 }
 
-// ─── Sortable Product Row ─────────────────────────────────────────────────────
 function SortableProductRow({ product, onEdit, onDelete, onToggle, deleting }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: product._id });
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 };
 
   const stock = product.stock ?? 0;
   const threshold = product.stock?.alertThreshold ?? product.alertThreshold ?? 5;
   const isOut = stock === 0;
   const isLow = stock > 0 && stock <= threshold;
+  const isInStock = stock > threshold;
+
+  const images = product.images || [];
 
   return (
     <div ref={setNodeRef} style={style} className={cn(
-      "flex flex-col sm:flex-row sm:items-center gap-3",
-      "bg-card border border-border/60 hover:border-border rounded-xl px-3 py-3 group transition-colors",
+      "bg-card border border-border/60 hover:border-border rounded-xl overflow-hidden transition-all",
       !product.isActive && "opacity-60"
     )}>
-      {/* Left: drag + image + info */}
-      <div className="flex items-center gap-3 flex-1 min-w-0">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <button {...attributes} {...listeners} className="text-muted-foreground/40 hover:text-muted-foreground shrink-0 cursor-grab active:cursor-grabbing touch-none p-1">
-              <GripVertical className="h-4 w-4" />
-            </button>
-          </TooltipTrigger>
-          <TooltipContent side="top">Drag to reorder</TooltipContent>
-        </Tooltip>
+      {/* Main row */}
+      <div className={cn(
+        "flex flex-col sm:flex-row sm:items-center gap-3 px-3 py-3 group transition-colors",
+        expanded && "border-b border-border/60"
+      )}>
+        {/* Left: drag + image + info */}
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button {...attributes} {...listeners} className="text-muted-foreground/40 hover:text-muted-foreground shrink-0 cursor-grab active:cursor-grabbing touch-none p-1">
+                <GripVertical className="h-4 w-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="top">Drag to reorder</TooltipContent>
+          </Tooltip>
 
-        <div className="h-11 w-11 shrink-0 rounded-lg bg-accent/20 border border-border/60 flex items-center justify-center overflow-hidden">
-          {product.images?.[0] ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={product.images[0]} alt={product.name} className="h-full w-full object-cover" />
+          <div className="h-11 w-11 shrink-0 rounded-lg bg-accent/20 border border-border/60 flex items-center justify-center overflow-hidden relative">
+            {product.images?.[0] ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={product.images[0]} alt={product.name} className="h-full w-full object-cover" />
+            ) : (
+              <ImageIcon className="h-4 w-4 text-muted-foreground/20" />
+            )}
+            {images.length > 1 && (
+              <span className="absolute bottom-0 right-0 bg-black/70 text-white text-[8px] font-bold px-1 rounded-tl-md">
+                +{images.length - 1}
+              </span>
+            )}
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5">
+              <span className="text-sm font-semibold truncate">{product.name}</span>
+              {product.featured && <Star className="h-3 w-3 shrink-0 fill-amber-500 text-amber-500" />}
+              <button
+                onClick={() => setExpanded(!expanded)}
+                className="ml-auto sm:hidden p-1 text-muted-foreground hover:bg-accent rounded-lg transition-colors"
+              >
+                {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+              </button>
+            </div>
+            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+              <Badge variant={product.status === "active" ? "default" : "secondary"} className="text-[9px] px-1.5 py-0 uppercase">
+                {product.status}
+              </Badge>
+              {isOut && <Badge variant="destructive" className="text-[9px] px-1.5 py-0">Out of Stock</Badge>}
+              {isLow && <Badge className="text-[9px] px-1.5 py-0 bg-amber-500/10 text-amber-500 border-amber-500/20">Low Stock</Badge>}
+              {isInStock && <Badge className="text-[9px] px-1.5 py-0 bg-emerald-500/10 text-emerald-500 border-emerald-500/20">In Stock</Badge>}
+            </div>
+          </div>
+        </div>
+
+        {/* Right: price + actions */}
+        <div className="flex items-center gap-3 justify-between sm:justify-end pl-10 sm:pl-0 border-t border-border/30 sm:border-0 pt-2 sm:pt-0 mt-1 sm:mt-0">
+          <div className="text-right">
+            <span className="text-sm font-bold text-primary">{product.price?.toFixed(2)} DH</span>
+            {product.compareAtPrice && (
+              <span className="ml-1.5 text-[10px] text-muted-foreground line-through">{product.compareAtPrice.toFixed(2)}</span>
+            )}
+          </div>
+
+          {confirmDelete ? (
+            <DeleteConfirm
+              onConfirm={() => onDelete(product._id)}
+              onCancel={() => setConfirmDelete(false)}
+              message="Delete product?"
+              loading={deleting}
+            />
           ) : (
-            <ImageIcon className="h-4 w-4 text-muted-foreground/20" />
-          )}
-        </div>
+            <div className="flex items-center gap-1">
+              {/* Edit */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button onClick={() => onEdit(product)} className="p-1.5 rounded-lg bg-muted/50 hover:bg-muted/80 text-muted-foreground hover:text-foreground transition-colors sm:opacity-0 sm:group-hover:opacity-100 opacity-100">
+                    <Edit2 className="h-3.5 w-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top">Edit product</TooltipContent>
+              </Tooltip>
 
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5">
-            <span className="text-sm font-semibold truncate">{product.name}</span>
-            {product.featured && <Star className="h-3 w-3 shrink-0 fill-amber-500 text-amber-500" />}
-          </div>
-          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-            {product.sku && <span className="text-[10px] font-mono text-muted-foreground">{product.sku}</span>}
-            <Badge variant={product.status === "active" ? "default" : product.status === "archived" ? "destructive" : "secondary"} className="text-[9px] px-1.5 py-0 uppercase">
-              {product.status}
-            </Badge>
-            {isOut && <Badge variant="destructive" className="text-[9px] px-1.5 py-0">Out of Stock</Badge>}
-            {isLow && <Badge className="text-[9px] px-1.5 py-0 bg-amber-500/10 text-amber-500 border-amber-500/20">Low Stock</Badge>}
-          </div>
+              {/* Delete */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button onClick={() => setConfirmDelete(true)} className="p-1.5 rounded-lg bg-muted/50 hover:bg-destructive/20 text-muted-foreground hover:text-destructive transition-colors sm:opacity-0 sm:group-hover:opacity-100 opacity-100">
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top">Delete product</TooltipContent>
+              </Tooltip>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Right: price + actions */}
-      <div className="flex items-center gap-3 justify-between sm:justify-end pl-10 sm:pl-0 border-t border-border/30 sm:border-0 pt-2 sm:pt-0 mt-1 sm:mt-0">
-        <div className="text-right">
-          <span className="text-sm font-bold text-primary">{product.price?.toFixed(2)} DH</span>
-          {product.compareAtPrice && (
-            <span className="ml-1.5 text-[10px] text-muted-foreground line-through">{product.compareAtPrice.toFixed(2)}</span>
+      {/* Expanded details section */}
+      {expanded && (
+        <div className="px-4 py-4 bg-muted/10 space-y-4 animate-in slide-in-from-top-2 duration-200">
+          {/* Product Description */}
+          {product.description && (
+            <div>
+              <h4 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Description</h4>
+              <p className="text-sm text-muted-foreground leading-relaxed">{product.description}</p>
+            </div>
           )}
-        </div>
 
-        {confirmDelete ? (
-          <DeleteConfirm
-            onConfirm={() => onDelete(product._id)}
-            onCancel={() => setConfirmDelete(false)}
-            message="Delete product?"
-            loading={deleting}
-          />
-        ) : (
-          <div className="flex items-center gap-1">
-            {/* Toggle */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button onClick={() => onToggle(product._id, !product.isActive)}
-                  className={cn("p-1.5 rounded-lg transition-colors",
-                    product.isActive ? "text-emerald-500 hover:bg-emerald-500/10" : "text-muted-foreground hover:bg-accent")}>
-                  {product.isActive ? <ToggleRight className="h-5 w-5" /> : <ToggleLeft className="h-5 w-5" />}
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="top">{product.isActive ? "Disable product" : "Enable product"}</TooltipContent>
-            </Tooltip>
-            {/* Edit */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button onClick={() => onEdit(product)} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors sm:opacity-0 sm:group-hover:opacity-100 opacity-100">
-                  <Edit2 className="h-3.5 w-3.5" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="top">Edit product</TooltipContent>
-            </Tooltip>
-            {/* Delete */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button onClick={() => setConfirmDelete(true)} className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors sm:opacity-0 sm:group-hover:opacity-100 opacity-100">
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="top">Delete product</TooltipContent>
-            </Tooltip>
+          {/* Image gallery */}
+          {images.length > 0 && (
+            <div>
+              <h4 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Images ({images.length})</h4>
+              <div className="flex flex-wrap gap-2">
+                {images.map((img, idx) => (
+                  <div key={idx} className="relative h-16 w-16 rounded-lg border border-border overflow-hidden group">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={img} alt={`${product.name} ${idx + 1}`} className="h-full w-full object-cover" />
+                    {idx === 0 && (
+                      <span className="absolute bottom-0 left-0 right-0 text-[7px] text-center bg-primary/80 text-primary-foreground py-0.5 font-bold">MAIN</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Product details grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
+            <div className="bg-card border border-border/60 rounded-lg p-3">
+              <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Status</p>
+              <p className="text-sm font-semibold capitalize mt-0.5">{product.status}</p>
+            </div>
+            <div className="bg-card border border-border/60 rounded-lg p-3">
+              <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Stock</p>
+              <p className="text-sm font-semibold mt-0.5">
+                <span className={cn(
+                  isOut ? "text-destructive" : isLow ? "text-amber-500" : "text-emerald-500"
+                )}>
+                  {stock}
+                </span>
+                <span className="text-[10px] text-muted-foreground ml-1">units</span>
+              </p>
+              <p className="text-[10px] text-muted-foreground">Threshold: {threshold}</p>
+            </div>
+            <div className="bg-card border border-border/60 rounded-lg p-3">
+              <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Featured</p>
+              <p className="text-sm font-semibold mt-0.5 flex items-center gap-1">
+                {product.featured ? (
+                  <>
+                    <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" /> Yes
+                  </>
+                ) : (
+                  "No"
+                )}
+              </p>
+            </div>
+            <div className="bg-card border border-border/60 rounded-lg p-3">
+              <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Compare Price</p>
+              <p className="text-sm font-semibold mt-0.5">
+                {product.compareAtPrice ? (
+                  <>
+                    {product.compareAtPrice.toFixed(2)} DH
+                    <span className="text-[10px] text-emerald-500 ml-1">(-{Math.round(((product.compareAtPrice - product.price) / product.compareAtPrice) * 100)}%)</span>
+                  </>
+                ) : (
+                  <span className="text-muted-foreground text-xs">Not set</span>
+                )}
+              </p>
+            </div>
           </div>
-        )}
-      </div>
+
+          {/* Metadata */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-[10px] text-muted-foreground border-t border-border/30 pt-3 mt-1">
+            <span>Created: {new Date(product.createdAt).toLocaleDateString(undefined, { dateStyle: "medium" })}</span>
+            <span className="hidden sm:inline text-border">|</span>
+            <span>Last updated: {new Date(product.updatedAt).toLocaleDateString(undefined, { dateStyle: "medium" })}</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -729,7 +789,7 @@ export default function CatalogPage() {
       if (data.success) {
         showToast(isEdit ? "Category updated!" : "Category created!");
         if (isEdit && catModal.image && catModal.image !== fields.image) {
-          fetch("/api/admin/upload", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: catModal.image }) }).catch(() => {});
+          fetch("/api/admin/upload", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: catModal.image }) }).catch(() => { });
         }
         setCatModal(null);
         fetchCatalog();
@@ -746,12 +806,12 @@ export default function CatalogPage() {
     try {
       const res = await fetch(`/api/admin/categories/${catId}`, { method: "DELETE" });
       const data = await res.json();
-      if (data.success) { 
-        showToast("Category deleted"); 
-        fetchCatalog(); 
-        if (category?.image) fetch("/api/admin/upload", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: category.image }) }).catch(() => {});
+      if (data.success) {
+        showToast("Category deleted");
+        fetchCatalog();
+        if (category?.image) fetch("/api/admin/upload", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: category.image }) }).catch(() => { });
         category?.products?.forEach(p => {
-          p.images?.forEach(img => fetch("/api/admin/upload", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: img }) }).catch(() => {}));
+          p.images?.forEach(img => fetch("/api/admin/upload", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: img }) }).catch(() => { }));
         });
       }
       else showToast(data.message || "Delete failed", "error");
@@ -783,7 +843,7 @@ export default function CatalogPage() {
         showToast(isEdit ? "Product updated!" : "Product added!");
         if (isEdit && productModal.product.images) {
           const removed = productModal.product.images.filter(img => !fields.images.includes(img));
-          removed.forEach(img => fetch("/api/admin/upload", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: img }) }).catch(() => {}));
+          removed.forEach(img => fetch("/api/admin/upload", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: img }) }).catch(() => { }));
         }
         setProductModal(null);
         fetchCatalog();
@@ -801,10 +861,10 @@ export default function CatalogPage() {
     try {
       const res = await fetch(`/api/admin/products/${productId}`, { method: "DELETE" });
       const data = await res.json();
-      if (data.success) { 
-        showToast("Product deleted"); 
-        fetchCatalog(); 
-        product?.images?.forEach(img => fetch("/api/admin/upload", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: img }) }).catch(() => {}));
+      if (data.success) {
+        showToast("Product deleted");
+        fetchCatalog();
+        product?.images?.forEach(img => fetch("/api/admin/upload", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: img }) }).catch(() => { }));
       }
       else showToast(data.message || "Delete failed", "error");
     } catch { showToast("Server error", "error"); }
@@ -859,94 +919,94 @@ export default function CatalogPage() {
     <TooltipProvider delayDuration={300}>
       <div className="space-y-6">
         {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-xl font-semibold tracking-tight">Catalog Builder</h2>
-          <p className="text-sm text-muted-foreground mt-0.5">Drag to reorder categories and products. Toggle to show/hide.</p>
-        </div>
-        <Button onClick={() => setCatModal("add")} className="w-fit gap-2">
-          <Plus className="h-4 w-4" /> New Category
-        </Button>
-      </div>
-
-      {/* Stats bar */}
-      {!loading && (
-        <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-          <span className="flex items-center gap-1.5">
-            <FolderOpen className="h-3.5 w-3.5" />
-            <strong className="text-foreground">{activeCategories}</strong>/{catalog.length} categories active
-          </span>
-          <span className="text-border">|</span>
-          <span className="flex items-center gap-1.5">
-            <Package className="h-3.5 w-3.5" />
-            <strong className="text-foreground">{activeProducts}</strong>/{totalProducts} products active
-          </span>
-        </div>
-      )}
-
-      {/* Content */}
-      {loading ? (
-        <div className="flex flex-col items-center justify-center py-24 gap-4">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">Loading catalog...</p>
-        </div>
-      ) : catalog.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 gap-4 text-center">
-          <div className="h-16 w-16 rounded-2xl bg-muted/60 border border-border flex items-center justify-center">
-            <FolderOpen className="h-8 w-8 text-muted-foreground/30" />
-          </div>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-sm font-semibold">No categories yet</p>
-            <p className="text-xs text-muted-foreground mt-1">Create your first category to start adding products.</p>
+            <h2 className="text-xl font-semibold tracking-tight">Catalog Builder</h2>
+            <p className="text-sm text-muted-foreground mt-0.5">Drag to reorder categories and products. Toggle to show/hide.</p>
           </div>
-          <Button onClick={() => setCatModal("add")} className="gap-2"><Plus className="h-4 w-4" />Create Category</Button>
+          <Button onClick={() => setCatModal("add")} className="w-fit gap-2">
+            <Plus className="h-4 w-4" /> New Category
+          </Button>
         </div>
-      ) : (
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleCategoryDragEnd}>
-          <SortableContext items={catalog.map((c) => c._id)} strategy={verticalListSortingStrategy}>
-            <div className="space-y-4">
-              {catalog.map((category) => (
-                <SortableCategoryCard
-                  key={category._id}
-                  category={category}
-                  categories={allCategories}
-                  onEditCat={(cat) => setCatModal(cat)}
-                  onDeleteCat={handleDeleteCat}
-                  onToggleCat={handleToggleCat}
-                  onAddProduct={(catId) => setProductModal({ catId, product: null })}
-                  onEditProduct={(product) => setProductModal({ catId: product.category, product })}
-                  onDeleteProduct={handleDeleteProduct}
-                  onToggleProduct={handleToggleProduct}
-                  onReorderProducts={handleReorderProducts}
-                  deletingIds={deletingIds}
-                />
-              ))}
+
+        {/* Stats bar */}
+        {!loading && (
+          <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              <FolderOpen className="h-3.5 w-3.5" />
+              <strong className="text-foreground">{activeCategories}</strong>/{catalog.length} categories active
+            </span>
+            <span className="text-border">|</span>
+            <span className="flex items-center gap-1.5">
+              <Package className="h-3.5 w-3.5" />
+              <strong className="text-foreground">{activeProducts}</strong>/{totalProducts} products active
+            </span>
+          </div>
+        )}
+
+        {/* Content */}
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-24 gap-4">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">Loading catalog...</p>
+          </div>
+        ) : catalog.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-24 gap-4 text-center">
+            <div className="h-16 w-16 rounded-2xl bg-muted/60 border border-border flex items-center justify-center">
+              <FolderOpen className="h-8 w-8 text-muted-foreground/30" />
             </div>
-          </SortableContext>
-        </DndContext>
-      )}
+            <div>
+              <p className="text-sm font-semibold">No categories yet</p>
+              <p className="text-xs text-muted-foreground mt-1">Create your first category to start adding products.</p>
+            </div>
+            <Button onClick={() => setCatModal("add")} className="gap-2"><Plus className="h-4 w-4" />Create Category</Button>
+          </div>
+        ) : (
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleCategoryDragEnd}>
+            <SortableContext items={catalog.map((c) => c._id)} strategy={verticalListSortingStrategy}>
+              <div className="space-y-4">
+                {catalog.map((category) => (
+                  <SortableCategoryCard
+                    key={category._id}
+                    category={category}
+                    categories={allCategories}
+                    onEditCat={(cat) => setCatModal(cat)}
+                    onDeleteCat={handleDeleteCat}
+                    onToggleCat={handleToggleCat}
+                    onAddProduct={(catId) => setProductModal({ catId, product: null })}
+                    onEditProduct={(product) => setProductModal({ catId: product.category, product })}
+                    onDeleteProduct={handleDeleteProduct}
+                    onToggleProduct={handleToggleProduct}
+                    onReorderProducts={handleReorderProducts}
+                    deletingIds={deletingIds}
+                  />
+                ))}
+              </div>
+            </SortableContext>
+          </DndContext>
+        )}
 
-      {/* Category Modal */}
-      {catModal !== null && (
-        <CategoryModal
-          initial={catModal === "add" ? null : catModal}
-          onSave={handleSaveCat}
-          onClose={() => setCatModal(null)}
-          saving={savingCat}
-        />
-      )}
+        {/* Category Modal */}
+        {catModal !== null && (
+          <CategoryModal
+            initial={catModal === "add" ? null : catModal}
+            onSave={handleSaveCat}
+            onClose={() => setCatModal(null)}
+            saving={savingCat}
+          />
+        )}
 
-      {/* Product Modal */}
-      {productModal !== null && (
-        <ProductModal
-          initial={productModal.product}
-          categoryId={productModal.catId}
-          categories={allCategories}
-          onSave={handleSaveProduct}
-          onClose={() => setProductModal(null)}
-          saving={savingProduct}
-        />
-      )}
+        {/* Product Modal */}
+        {productModal !== null && (
+          <ProductModal
+            initial={productModal.product}
+            categoryId={productModal.catId}
+            categories={allCategories}
+            onSave={handleSaveProduct}
+            onClose={() => setProductModal(null)}
+            saving={savingProduct}
+          />
+        )}
 
         {/* Toast */}
         {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}

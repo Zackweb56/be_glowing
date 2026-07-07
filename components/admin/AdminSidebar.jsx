@@ -5,7 +5,7 @@ import { AdminSidebarNav } from "./AdminSidebarNav";
 import { Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export function AdminSidebar({ collapsed = false }) {
+export function AdminSidebar({ collapsed = false, stockBadgeCount = 0 }) {
   return (
     <aside
       className={cn(
@@ -34,7 +34,7 @@ export function AdminSidebar({ collapsed = false }) {
 
       {/* Navigation */}
       <div className="flex-1 overflow-y-auto py-4 scrollbar-thin">
-        <AdminSidebarNav collapsed={collapsed} />
+        <AdminSidebarNav collapsed={collapsed} stockBadgeCount={stockBadgeCount} />
       </div>
 
       <Separator />
