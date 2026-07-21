@@ -41,38 +41,35 @@ export async function PUT(req) {
     // Find settings or create new one
     let settings = await StoreSettings.findOne();
     
+    const fields = [
+      'storeName', 'logoUrl', 'siteTitle', 'seoDescription', 'seoKeywords',
+      'contactEmail', 'contactPhone', 'address', 'currency',
+      'instagram', 'facebook', 'tiktok', 'whatsapp',
+      'shippingPolicy', 'privacyPolicy', 'returnPolicy',
+      'themePrimaryColor', 'themeSecondaryColor', 'themePrimaryFont', 'themeSecondaryFont',
+      'heroType', 'heroBackgroundImage', 'heroTitle', 'heroSubtitle',
+    ];
+
     if (settings) {
-      // Update existing
-      settings.storeName = body.storeName !== undefined ? body.storeName : settings.storeName;
-      settings.contactEmail = body.contactEmail !== undefined ? body.contactEmail : settings.contactEmail;
-      settings.contactPhone = body.contactPhone !== undefined ? body.contactPhone : settings.contactPhone;
-      settings.address = body.address !== undefined ? body.address : settings.address;
-      settings.currency = body.currency !== undefined ? body.currency : settings.currency;
-      settings.instagram = body.instagram !== undefined ? body.instagram : settings.instagram;
-      settings.facebook = body.facebook !== undefined ? body.facebook : settings.facebook;
-      settings.tiktok = body.tiktok !== undefined ? body.tiktok : settings.tiktok;
-      settings.whatsapp = body.whatsapp !== undefined ? body.whatsapp : settings.whatsapp;
-      settings.shippingPolicy = body.shippingPolicy !== undefined ? body.shippingPolicy : settings.shippingPolicy;
-      settings.privacyPolicy = body.privacyPolicy !== undefined ? body.privacyPolicy : settings.privacyPolicy;
-      settings.returnPolicy = body.returnPolicy !== undefined ? body.returnPolicy : settings.returnPolicy;
-      
+      // Update all known fields
+      for (const field of fields) {
+        if (body[field] !== undefined) {
+          settings[field] = body[field];
+        }
+      }
+      if (body.announcements !== undefined) {
+        settings.announcements = body.announcements;
+      }
       await settings.save();
     } else {
-      // Create settings
-      settings = await StoreSettings.create({
-        storeName: body.storeName,
-        contactEmail: body.contactEmail,
-        contactPhone: body.contactPhone,
-        address: body.address,
-        currency: body.currency,
-        instagram: body.instagram,
-        facebook: body.facebook,
-        tiktok: body.tiktok,
-        whatsapp: body.whatsapp,
-        shippingPolicy: body.shippingPolicy,
-        privacyPolicy: body.privacyPolicy,
-        returnPolicy: body.returnPolicy,
-      });
+      const createData = {};
+      for (const field of fields) {
+        if (body[field] !== undefined) createData[field] = body[field];
+      }
+      if (body.announcements !== undefined) {
+        createData.announcements = body.announcements;
+      }
+      settings = await StoreSettings.create(createData);
     }
 
     return NextResponse.json({ success: true, message: "Settings updated successfully", settings });

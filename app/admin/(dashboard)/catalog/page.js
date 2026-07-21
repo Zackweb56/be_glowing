@@ -17,12 +17,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import {
-  Plus, Trash2, Edit2, GripVertical, ToggleLeft, ToggleRight,
-  ChevronDown, ChevronUp, Image as ImageIcon, X, Check,
-  AlertTriangle, Package, FolderOpen, Star, Loader2,
-  AlertCircle, CheckCircle2,
-} from "lucide-react";
+import { MdAdd as Plus, MdDeleteOutline as Trash2, MdEdit as Edit2, MdDragIndicator as GripVertical, MdToggleOff as ToggleLeft, MdToggleOn as ToggleRight, MdExpandMore as ChevronDown, MdExpandLess as ChevronUp, MdImage as ImageIcon, MdClose as X, MdCheck as Check, MdWarningAmber as AlertTriangle, MdInventory2 as Package, MdFolderOpen as FolderOpen, MdStar as Star, MdLoop as Loader2, MdErrorOutline as AlertCircle, MdCheckCircleOutline as CheckCircle2 } from 'react-icons/md';
 import { Toast } from "@/components/admin/Toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

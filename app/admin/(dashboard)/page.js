@@ -1,11 +1,4 @@
-import {
-  Package,
-  FolderOpen,
-  ShoppingCart,
-  Layers,
-  TrendingUp,
-  Clock,
-} from "lucide-react";
+import { MdInventory2 as Package, MdFolderOpen as FolderOpen, MdShoppingCart as ShoppingCart, MdLayers as Layers, MdTrendingUp as TrendingUp, MdAccessTime as Clock } from 'react-icons/md';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";

@@ -119,6 +119,27 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+.store-light {
+  --background: #FAF8F5;
+  --foreground: #1A1A1A;
+  --card: #FFFFFF;
+  --card-foreground: #1A1A1A;
+  --popover: #FFFFFF;
+  --popover-foreground: #1A1A1A;
+  --primary: #B8963E;
+  --primary-foreground: #FFFFFF;
+  --secondary: #E8E4DF;
+  --secondary-foreground: #1A1A1A;
+  --muted: #FAF8F5;
+  --muted-foreground: #4A4A4A;
+  --accent: #FAF8F5;
+  --accent-foreground: #B8963E;
+  --border: #E8E4DF;
+  --input: #E8E4DF;
+  --ring: #B8963E;
+  --radius: 0.5rem;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -131,4 +152,30 @@
   html {
     @apply font-sans;
   }
+}
+
+/* All buttons, action buttons, and links should have cursor pointer effect */
+a,
+button,
+[role="button"],
+select,
+input[type="submit"],
+input[type="button"],
+input[type="reset"] {
+  cursor: pointer !important;
+}
+
+/* Only for products titles and a links should have underline hover effect */
+a:hover,
+.product-title:hover,
+.group:hover .product-title {
+  text-decoration: underline !important;
+  text-underline-offset: 4px;
+}
+
+/* Explicitly disable underline hover on buttons, role=button, and other elements */
+button:hover,
+[role="button"]:hover,
+input[type="submit"]:hover {
+  text-decoration: none !important;
 }

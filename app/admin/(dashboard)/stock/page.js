@@ -1,11 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import {
-  Search, Image as ImageIcon, Loader2, AlertTriangle, CheckCircle2,
-  AlertCircle, Eye, Pencil, Trash2, ToggleLeft, ToggleRight, X,
-  TrendingUp, PackageX, Info,
-} from "lucide-react";
+import { MdSearch as Search, MdImage as ImageIcon, MdLoop as Loader2, MdWarningAmber as AlertTriangle, MdCheckCircleOutline as CheckCircle2, MdErrorOutline as AlertCircle, MdVisibility as Eye, MdEdit as Pencil, MdDeleteOutline as Trash2, MdToggleOff as ToggleLeft, MdToggleOn as ToggleRight, MdClose as X, MdTrendingUp as TrendingUp, MdRemoveShoppingCart as PackageX, MdInfoOutline as Info } from 'react-icons/md';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

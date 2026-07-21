@@ -15,7 +15,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Eye, EyeOff, Loader2, CheckCircle2, AlertCircle, AlertTriangle, X } from "lucide-react";
+import { MdVisibility as Eye, MdVisibilityOff as EyeOff, MdLoop as Loader2, MdCheckCircleOutline as CheckCircle2, MdErrorOutline as AlertCircle, MdWarningAmber as AlertTriangle, MdClose as X } from 'react-icons/md';
 import { cn } from "@/lib/utils";
 import { useEffect } from "react";
 

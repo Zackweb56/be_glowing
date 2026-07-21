@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { CheckCircle, XCircle, Loader2, Database, Server, Clock } from 'lucide-react';
+import { MdCheckCircle as CheckCircle, MdCancel as XCircle, MdLoop as Loader2, MdStorage as Database, MdDns as Server, MdAccessTime as Clock } from 'react-icons/md';
 
 export default function DatabaseTestPage() {
   const [status, setStatus] = useState('loading');

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { CheckCircle2, AlertCircle, AlertTriangle, X } from "lucide-react";
+import { MdCheckCircleOutline as CheckCircle2, MdErrorOutline as AlertCircle, MdWarningAmber as AlertTriangle, MdClose as X } from 'react-icons/md';
 import { cn } from "@/lib/utils";
 
 export function Toast({ message, type, onClose }) {

@@ -1,11 +1,28 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Separator } from "@/components/ui/separator";
 import { AdminSidebarNav } from "./AdminSidebarNav";
-import { Sparkles } from "lucide-react";
+import { MdAutoAwesome as Sparkles } from 'react-icons/md';
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 
 export function AdminSidebar({ collapsed = false, stockBadgeCount = 0 }) {
+  const [logoUrl, setLogoUrl] = useState("");
+  const [storeName, setStoreName] = useState("Be Glowing");
+
+  useEffect(() => {
+    fetch("/api/store/settings")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success) {
+          setLogoUrl(data.settings.logoUrl || "");
+          setStoreName(data.settings.storeName || "Be Glowing");
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   return (
     <aside
       className={cn(
@@ -20,13 +37,28 @@ export function AdminSidebar({ collapsed = false, stockBadgeCount = 0 }) {
           collapsed && "justify-center px-2"
         )}
       >
-        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary">
-          <Sparkles className="h-4 w-4 text-primary-foreground" />
-        </div>
-        {!collapsed && (
-          <span className="text-sm font-semibold tracking-tight truncate">
-            Be Glowing
-          </span>
+        {logoUrl ? (
+          <>
+            <div className="h-7 w-7 shrink-0 rounded-lg overflow-hidden bg-muted flex items-center justify-center">
+              <Image src={logoUrl} alt={storeName} width={28} height={28} className="object-contain" />
+            </div>
+            {!collapsed && (
+              <span className="text-sm font-semibold tracking-tight truncate">
+                {storeName}
+              </span>
+            )}
+          </>
+        ) : (
+          <>
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary">
+              <Sparkles className="h-4 w-4 text-primary-foreground" />
+            </div>
+            {!collapsed && (
+              <span className="text-sm font-semibold tracking-tight truncate">
+                {storeName}
+              </span>
+            )}
+          </>
         )}
       </div>
 

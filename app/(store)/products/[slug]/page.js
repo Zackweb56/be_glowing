@@ -1,16 +1,20 @@
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { getStoreProductBySlug } from "@/lib/services/store";
+import { getStoreProductBySlug, getStoreSettings } from "@/lib/services/store";
 import { StockBadge } from "@/components/store/StockBadge";
-import { Button } from "@/components/ui/button";
-import { ShoppingCart, Heart, ShieldCheck, Truck, ArrowLeft } from "lucide-react";
+import { MdVerifiedUser as ShieldCheck, MdLocalShipping as Truck, MdArrowBack as ArrowLeft } from 'react-icons/md';
 import Link from "next/link";
+import { AddToCartButton } from "@/components/store/AddToCartButton";
+import { WhatsAppOrderButton } from "@/components/store/WhatsAppOrderButton";
 
 export const dynamic = "force-dynamic";
 
 export default async function ProductDetailsPage({ params }) {
   const { slug } = await params;
-  const product = await getStoreProductBySlug(slug);
+  const [product, settings] = await Promise.all([
+    getStoreProductBySlug(slug),
+    getStoreSettings()
+  ]);
 
   if (!product) {
     notFound();
@@ -19,15 +23,15 @@ export default async function ProductDetailsPage({ params }) {
   const isOutOfStock = product.stock?.quantity === 0;
 
   return (
-    <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8 sm:py-12">
-      <Link href="/#catalog" className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-foreground mb-8 transition-colors">
+    <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8 sm:py-12 bg-background">
+      <Link href="/store" className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-foreground mb-8 transition-colors">
         <ArrowLeft className="mr-2 h-4 w-4" /> Back to Shop
       </Link>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-12 lg:gap-16">
         {/* Image Gallery */}
         <div className="flex flex-col gap-4">
-          <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-accent/20 border border-border/40 flex items-center justify-center">
+          <div className="relative aspect-square w-full overflow-hidden rounded-2xl bg-white border border-border flex items-center justify-center">
             {product.images?.[0] ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img 
@@ -40,7 +44,7 @@ export default async function ProductDetailsPage({ params }) {
             )}
             {isOutOfStock && (
               <div className="absolute inset-0 bg-background/50 flex items-center justify-center backdrop-blur-[2px]">
-                <span className="rounded-full bg-background px-6 py-2 text-lg font-bold tracking-widest text-foreground shadow-xl uppercase border border-border">
+                <span className="rounded-full bg-background px-6 py-2 text-lg font-bold tracking-widest text-foreground uppercase border border-border">
                   Out of Stock
                 </span>
               </div>
@@ -64,22 +68,22 @@ export default async function ProductDetailsPage({ params }) {
         <div className="flex flex-col">
           <div className="flex items-center justify-between gap-4">
             {product.category && (
-              <Link href={`/#catalog`} className="text-sm font-semibold tracking-wider text-primary uppercase">
+              <Link href={`/store?category=${product.category._id}`} className="text-sm font-semibold tracking-wider text-primary uppercase">
                 {product.category.name}
               </Link>
             )}
             <StockBadge stock={product.stock} />
           </div>
 
-          <h1 className="mt-4 text-3xl sm:text-4xl font-bold tracking-tight text-foreground">{product.name}</h1>
+          <h1 className="mt-4 text-3xl sm:text-4xl font-bold tracking-tight text-foreground font-serif">{product.name}</h1>
           
           <div className="mt-4 flex items-center gap-4">
-            <span className="text-3xl font-medium tracking-tight text-foreground">${product.price?.toFixed(2)}</span>
+            <span className="text-3xl font-medium tracking-tight text-foreground">{product.price?.toFixed(2)} MAD</span>
             {product.compareAtPrice > product.price && (
-              <span className="text-xl text-muted-foreground line-through">${product.compareAtPrice.toFixed(2)}</span>
+              <span className="text-xl text-muted-foreground line-through">{product.compareAtPrice.toFixed(2)} MAD</span>
             )}
             {product.compareAtPrice > product.price && (
-              <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-500">
+              <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-600">
                 Save {Math.round((1 - product.price / product.compareAtPrice) * 100)}%
               </span>
             )}
@@ -92,14 +96,12 @@ export default async function ProductDetailsPage({ params }) {
           </div>
 
           <div className="mt-10 flex flex-col gap-4 sm:flex-row">
-            <Button size="lg" className="flex-1 rounded-full text-base h-14 shadow-lg" disabled={isOutOfStock}>
-              {isOutOfStock ? "Out of Stock" : (
-                <><ShoppingCart className="mr-2 h-5 w-5" /> Add to Cart</>
-              )}
-            </Button>
-            <Button size="lg" variant="outline" className="rounded-full h-14 w-full sm:w-14 shrink-0 px-0 shadow-sm border-border">
-              <Heart className="h-5 w-5" />
-            </Button>
+            <AddToCartButton product={product} isOutOfStock={isOutOfStock} />
+            <WhatsAppOrderButton 
+              product={product} 
+              whatsappNumber={settings.whatsapp} 
+              className="flex-1 h-14 text-base shadow-none"
+            />
           </div>
 
           {/* Benefits */}

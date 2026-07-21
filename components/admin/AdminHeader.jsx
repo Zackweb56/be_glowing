@@ -2,13 +2,13 @@
 
 import { signOut, useSession } from "next-auth/react";
 import { usePathname } from "next/navigation";
-import { PanelLeft, LogOut, User, ChevronDown, Bell, CheckCheck, Package, X } from "lucide-react";
+import { MdViewSidebar as PanelLeft, MdLogout as LogOut, MdPersonOutline as User, MdExpandMore as ChevronDown, MdNotifications as Bell, MdDoneAll as CheckCheck, MdInventory2 as Package, MdClose as X } from 'react-icons/md';
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { AdminSidebarNav } from "./AdminSidebarNav";
-import { Sparkles } from "lucide-react";
+import { MdAutoAwesome as Sparkles } from 'react-icons/md';
 import { useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";

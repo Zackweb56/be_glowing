@@ -3,13 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  LayoutDashboard,
-  Layers,
-  ShoppingCart,
-  Settings,
-  LayoutGrid,
-} from "lucide-react";
+import { MdDashboard as LayoutDashboard, MdLayers as Layers, MdShoppingCart as ShoppingCart, MdSettings as Settings, MdGridOn as LayoutGrid, MdFormatListBulleted as LayoutList } from 'react-icons/md';
 import { cn } from "@/lib/utils";
 import {
   Tooltip,
@@ -29,6 +23,12 @@ export const navGroups = [
     items: [
       { href: "/admin/catalog", label: "Catalog Builder", icon: LayoutGrid },
       { href: "/admin/stock", label: "Stock", icon: Layers, badge: true },
+    ],
+  },
+  {
+    label: "Content",
+    items: [
+      { href: "/admin/home-content", label: "Home Content", icon: LayoutList },
     ],
   },
   {
